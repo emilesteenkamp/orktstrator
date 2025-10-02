@@ -3,6 +3,7 @@ plugins {
 }
 
 group = "me.emilesteenkamp"
+version = "0.0.0"
 
 allprojects {
     repositories {

@@ -5,7 +5,7 @@ plugins {
 }
 
 dependencies {
-    commonMainImplementation(projects.library.api)
+    commonMainApi(projects.library.api)
     commonMainImplementation(projects.library.core)
 }
 
