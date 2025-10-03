@@ -6,13 +6,13 @@ import me.emilesteenkamp.orktestrator.api.OrktestratorError
 import me.emilesteenkamp.orktestrator.api.State
 import me.emilesteenkamp.orktestrator.api.Step
 
-class OrktestratorCore<TRANSIENT_STATE, FINALISED_STATE>(
+internal class OrktestratorCore<TRANSIENT_STATE, FINALISED_STATE>(
     private val graph: Graph<TRANSIENT_STATE, FINALISED_STATE>,
 ) : Orktestrator<TRANSIENT_STATE, FINALISED_STATE>
         where TRANSIENT_STATE : State.Transient,
               FINALISED_STATE : State.Final {
     @Throws(OrktestratorError.RuntimeError::class)
-    override suspend fun start(initialState: TRANSIENT_STATE): FINALISED_STATE = run(
+    override suspend fun orchestrate(initialState: TRANSIENT_STATE): FINALISED_STATE = run(
         state = initialState,
         step = graph.entryPoint(),
     )
@@ -45,4 +45,12 @@ class OrktestratorCore<TRANSIENT_STATE, FINALISED_STATE>(
     @Throws(OrktestratorError.RuntimeError.InvalidStateModificationResult::class)
     private fun State.Transient.unsafeCast(): TRANSIENT_STATE = this as? TRANSIENT_STATE
         ?: throw OrktestratorError.RuntimeError.InvalidStateModificationResult()
+}
+
+fun <TRANSIENT_STATE, FINALISED_STATE> Orktestrator.Companion.build(
+    graph: Graph<TRANSIENT_STATE, FINALISED_STATE>
+): Orktestrator<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : State.Transient,
+                                                        FINALISED_STATE : State.Final
+{
+    return OrktestratorCore(graph)
 }

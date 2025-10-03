@@ -9,7 +9,7 @@ interface Orktestrator<TRANSIENT_STATE, FINALISED_STATE>
         OrktestratorError.RuntimeError::class,
         CancellationException::class
     )
-    suspend fun start(initialState: TRANSIENT_STATE): FINALISED_STATE
+    suspend fun orchestrate(initialState: TRANSIENT_STATE): FINALISED_STATE
 
     companion object
 }

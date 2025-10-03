@@ -6,6 +6,7 @@ import me.emilesteenkamp.orktestrator.api.State
 import me.emilesteenkamp.orktestrator.api.Step
 
 class GraphBuilder<TRANSIENT_STATE, FINALISED_STATE>
+internal constructor()
         where TRANSIENT_STATE : State.Transient,
               FINALISED_STATE : State.Final
 {
@@ -53,4 +54,10 @@ class GraphBuilder<TRANSIENT_STATE, FINALISED_STATE>
         val executor: suspend (INPUT) -> OUTPUT
     ) where TRANSIENT_STATE : State.Transient,
             FINALISED_STATE : State.Final
+}
+
+fun <TRANSIENT_STATE, FINALISED_STATE> Graph.Companion.builder(): GraphBuilder<TRANSIENT_STATE, FINALISED_STATE>
+where TRANSIENT_STATE : State.Transient,
+      FINALISED_STATE : State.Final {
+    return GraphBuilder()
 }

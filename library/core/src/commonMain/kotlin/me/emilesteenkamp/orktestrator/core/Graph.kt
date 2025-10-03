@@ -9,4 +9,6 @@ interface Graph<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : State.
     fun entryPoint(): Step<*, *>
 
     fun <INPUT, OUTPUT> engineFor(step: Step<INPUT, OUTPUT>): StepEngine<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>?
+
+    companion object
 }

@@ -5,14 +5,16 @@ import me.emilesteenkamp.orktestrator.api.Orktestrator
 import me.emilesteenkamp.orktestrator.api.OrktestratorError
 import me.emilesteenkamp.orktestrator.api.State
 import me.emilesteenkamp.orktestrator.api.Step
+import me.emilesteenkamp.orktestrator.core.Graph
 import me.emilesteenkamp.orktestrator.core.GraphBuilder
-import me.emilesteenkamp.orktestrator.core.OrktestratorCore
+import me.emilesteenkamp.orktestrator.core.build
+import me.emilesteenkamp.orktestrator.core.builder
 
 class OrktestratorDefinition<TRANSIENT_STATE, FINALISED_STATE>
 internal constructor()
         where TRANSIENT_STATE : State.Transient,
               FINALISED_STATE : State.Final {
-    private val graphBuilder = GraphBuilder<TRANSIENT_STATE, FINALISED_STATE>()
+    private val graphBuilder = Graph.builder<TRANSIENT_STATE, FINALISED_STATE>()
 
     @Suppress("UNUSED")
     fun <INPUT, OUTPUT> step(
@@ -36,6 +38,6 @@ internal constructor()
     @Suppress("UNCHECKED_CAST")
     @Throws(OrktestratorError.DefinitionError::class)
     internal fun build(): Orktestrator<TRANSIENT_STATE, FINALISED_STATE> {
-        return OrktestratorCore(graphBuilder.build())
+        return Orktestrator.build(graphBuilder.build())
     }
 }
