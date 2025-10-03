@@ -15,8 +15,8 @@ class GraphBuilder<TRANSIENT_STATE, FINALISED_STATE>
         stepDefinitionList.add(stepDefinition)
     }
 
-    fun build(): Graph<TRANSIENT_STATE, FINALISED_STATE> {
-        return GraphCore(
+    fun build(): Graph<TRANSIENT_STATE, FINALISED_STATE> = with(GraphCore.Companion) {
+        construct(
             entryPoint = stepDefinitionList.firstOrNull()?.step
                 ?: throw OrktestratorError.DefinitionError.NoStepsDefined(),
             map = stepDefinitionList
