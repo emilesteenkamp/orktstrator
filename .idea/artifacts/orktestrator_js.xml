@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="orktestrator-js">
+    <output-path>$PROJECT_DIR$/build/libs</output-path>
+    <root id="archive" name="orktestrator-js.jar">
+      <element id="module-output" name="orktestrator.jsMain" />
+    </root>
+  </artifact>
+</component>

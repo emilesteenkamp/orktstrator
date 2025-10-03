@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="definition-jvm">
+    <output-path>$PROJECT_DIR$/library/definition/build/libs</output-path>
+    <root id="archive" name="definition-jvm.jar">
+      <element id="module-output" name="orktestrator.library.definition.jvmMain" />
+    </root>
+  </artifact>
+</component>

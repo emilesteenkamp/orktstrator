@@ -1,85 +1,123 @@
 package me.emilesteenkamp.orktestrator.core
 
+import me.emilesteenkamp.orktestrator.api.CollectorScope
 import me.emilesteenkamp.orktestrator.api.Orktestrator
+import me.emilesteenkamp.orktestrator.api.OrktestratorError
+import me.emilesteenkamp.orktestrator.api.State
+import me.emilesteenkamp.orktestrator.api.Step
 
 class OrktestratorCore<TRANSIENT_STATE, FINALISED_STATE>(
     private val graph: Graph<TRANSIENT_STATE, FINALISED_STATE>,
-) : Orktestrator<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : Orktestrator.State.Transient,
-                                                         FINALISED_STATE : Orktestrator.State.Final {
-    override suspend fun start(initialState: TRANSIENT_STATE): FINALISED_STATE {
-        val step = graph.initialStep() ?: error("No steps defined.")
-        return run(
-            state = initialState,
-            step = step,
-        )
-    }
+) : Orktestrator<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : State.Transient,
+                                                         FINALISED_STATE : State.Final {
+    @Throws(OrktestratorError.RuntimeError::class)
+    override suspend fun start(initialState: TRANSIENT_STATE): FINALISED_STATE = run(
+        state = initialState,
+        step = graph.entryPoint(),
+    )
 
-    private suspend fun run(
+    @Throws(OrktestratorError.RuntimeError::class)
+    private tailrec suspend fun <INPUT, OUTPUT> run(
         state: TRANSIENT_STATE,
-        step: Orktestrator.Step<*, *>,
+        step: Step<INPUT, OUTPUT>,
     ): FINALISED_STATE {
-        val runner = graph.runnerFor(step) ?: error("No step runner for step $step")
+        val engine = graph.engineFor(step) ?: throw OrktestratorError.RuntimeError.UndefinedNextStep()
+        val input = with(engine) { with(CollectorScope) { collector(state) } }
+        val output = engine.executor(input)
 
-        val input =
-            try {
-                with(runner) {
-                    with(Orktestrator.CollectorScope) {
-                        collector(state)
-                    }
-                }
-            } catch (_: Orktestrator.CollectorScope.InvalidStateError) {
-                error("State in invalid state.")
-            }
-
-        val output = runner.executor(input)
-
-        return when (val state = runner.modifier(state, output)) {
-            is Orktestrator.State.Final -> state.unsafeCast()
-            is Orktestrator.State.Transient -> {
+        return when (val state = engine.modifier(state, output)) {
+            is State.Final -> state.unsafeCast()
+            is State.Transient -> {
                 val transientState = state.unsafeCast()
-                val nextStep = runner.router(transientState)
+                val nextStep = engine.router(transientState) ?: throw OrktestratorError.RuntimeError.NoNextStepDefined()
                 run(transientState, nextStep)
             }
         }
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun Orktestrator.State.Final.unsafeCast(): FINALISED_STATE = this as FINALISED_STATE
+    @Throws(OrktestratorError.RuntimeError.InvalidStateModificationResult::class)
+    private fun State.Final.unsafeCast(): FINALISED_STATE = this as? FINALISED_STATE
+        ?: throw OrktestratorError.RuntimeError.InvalidStateModificationResult()
 
     @Suppress("UNCHECKED_CAST")
-    private fun Orktestrator.State.Transient.unsafeCast(): TRANSIENT_STATE = this as TRANSIENT_STATE
+    @Throws(OrktestratorError.RuntimeError.InvalidStateModificationResult::class)
+    private fun State.Transient.unsafeCast(): TRANSIENT_STATE = this as? TRANSIENT_STATE
+        ?: throw OrktestratorError.RuntimeError.InvalidStateModificationResult()
 
-    class Graph<TRANSIENT_STATE, FINALISED_STATE>(
-        private val map: LinkedHashMap<Orktestrator.Step<*, *>, StepRunner<TRANSIENT_STATE, FINALISED_STATE, *, *>>,
-    ) where TRANSIENT_STATE : Orktestrator.State.Transient,
-            FINALISED_STATE : Orktestrator.State.Final {
-        fun initialStep(): Orktestrator.Step<Any, Any>? =
-            map.entries
-                .firstOrNull()
-                ?.key
-                ?.unsafeCast()
+    class Graph<TRANSIENT_STATE, FINALISED_STATE>
+    private constructor(
+        private val entryPoint: Step<*, *>,
+        private val map: Map<Step<*, *>, StepEngine<TRANSIENT_STATE, FINALISED_STATE, *, *>>,
+    ) where TRANSIENT_STATE : State.Transient,
+            FINALISED_STATE : State.Final {
+        fun entryPoint() = entryPoint
 
-        fun runnerFor(step: Orktestrator.Step<*, *>): StepRunner<TRANSIENT_STATE, FINALISED_STATE, Any, Any>? = map[step]?.unsafeCast()
+
+        fun <INPUT, OUTPUT> engineFor(step: Step<INPUT, OUTPUT>) =
+            map[step]?.unsafeCast<INPUT, OUTPUT>()
 
         @Suppress("UNCHECKED_CAST")
-        private fun Orktestrator.Step<*, *>.unsafeCast(): Orktestrator.Step<Any, Any> = this as Orktestrator.Step<Any, Any>
+        private fun <INPUT, OUTPUT> StepEngine<TRANSIENT_STATE, FINALISED_STATE, *, *>.unsafeCast() =
+            this as StepEngine<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>
 
-        @Suppress("UNCHECKED_CAST")
-        private fun StepRunner<
-                TRANSIENT_STATE,
-                FINALISED_STATE,
-                *,
-                *,
-                >.unsafeCast(): StepRunner<TRANSIENT_STATE, FINALISED_STATE, Any, Any> =
-            this as StepRunner<TRANSIENT_STATE, FINALISED_STATE, Any, Any>
+        class Builder<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : State.Transient,
+                                                              FINALISED_STATE : State.Final
+        {
+            private val stepDefinitionList = mutableListOf<StepDefinition<TRANSIENT_STATE, FINALISED_STATE, *, *>>()
+
+            fun <INPUT, OUTPUT> add(stepDefinition: StepDefinition<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>) {
+                stepDefinitionList.add(stepDefinition)
+            }
+
+            fun build(): Graph<TRANSIENT_STATE, FINALISED_STATE> {
+                return Graph(
+                    entryPoint = stepDefinitionList.firstOrNull()?.step ?: throw OrktestratorError.DefinitionError.NoStepsDefined(),
+                    map = stepDefinitionList
+                        .windowed(2, 1, partialWindows = true) { window ->
+                            window[0].step to toStepEngine(window[0], window.getOrNull(1))
+                        }.toMap()
+                )
+            }
+
+            private fun <INPUT, OUTPUT> toStepEngine(
+                current: StepDefinition<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>,
+                next: StepDefinition<TRANSIENT_STATE, FINALISED_STATE, *, *>?
+            ): StepEngine<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT> {
+                return object : StepEngine<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT> {
+                    override fun CollectorScope.collector(state: TRANSIENT_STATE): INPUT =
+                        current.collector.invoke(this, state)
+
+                    override fun modifier(state: TRANSIENT_STATE, output: OUTPUT) =
+                        current.modifier?.invoke(state, output) ?: state
+
+                    override fun router(state: TRANSIENT_STATE) =
+                        current.router?.invoke(state) ?: next?.step
+
+                    override suspend fun executor(input: INPUT) =
+                        current.executor.invoke(input)
+                }
+            }
+
+            data class StepDefinition<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>(
+                val step: Step<INPUT, OUTPUT>,
+                val collector: CollectorScope.(TRANSIENT_STATE) -> INPUT,
+                val modifier: ((TRANSIENT_STATE, OUTPUT) -> State)?,
+                val router: ((TRANSIENT_STATE) -> Step<*, *>)?,
+                val executor: suspend (INPUT) -> OUTPUT
+            ) where TRANSIENT_STATE : State.Transient,
+                    FINALISED_STATE : State.Final
+        }
     }
 
-
-    data class StepRunner<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>(
-        val collector: Orktestrator.CollectorScope.(TRANSIENT_STATE) -> INPUT,
-        val modifier: (TRANSIENT_STATE, OUTPUT) -> Orktestrator.State,
-        val router: ((TRANSIENT_STATE) -> (Orktestrator.Step<*, *>)),
-        val executor: suspend (INPUT) -> OUTPUT,
-    ) where TRANSIENT_STATE : Orktestrator.State.Transient,
-            FINALISED_STATE : Orktestrator.State.Final
+    interface StepEngine<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>
+            where TRANSIENT_STATE : State.Transient,
+                  FINALISED_STATE : State.Final
+    {
+        @Throws(OrktestratorError.RuntimeError.RequiredValueMissing::class)
+        fun CollectorScope.collector(state: TRANSIENT_STATE): INPUT
+        fun modifier(state: TRANSIENT_STATE, output: OUTPUT): State
+        fun router(state: TRANSIENT_STATE): Step<*, *>?
+        suspend fun executor(input: INPUT): OUTPUT
+    }
 }
