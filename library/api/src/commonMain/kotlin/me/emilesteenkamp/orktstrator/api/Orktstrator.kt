@@ -1,12 +1,12 @@
-package me.emilesteenkamp.orktestrator.api
+package me.emilesteenkamp.orktstrator.api
 
 import kotlin.coroutines.cancellation.CancellationException
 
-interface Orktestrator<TRANSIENT_STATE, FINALISED_STATE>
+interface Orktstrator<TRANSIENT_STATE, FINALISED_STATE>
         where TRANSIENT_STATE : State.Transient,
               FINALISED_STATE : State.Final {
     @Throws(
-        OrktestratorException.OrchestrationException::class,
+        OrktstratorException.OrchestrationException::class,
         CancellationException::class
     )
     suspend fun orchestrate(initialState: TRANSIENT_STATE): FINALISED_STATE

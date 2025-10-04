@@ -1,11 +1,11 @@
-package me.emilesteenkamp.orktestrator.api
+package me.emilesteenkamp.orktstrator.api
 
-sealed class OrktestratorException : Exception() {
-    sealed class DefinitionException : OrktestratorException() {
+sealed class OrktstratorException : Exception() {
+    sealed class DefinitionException : OrktstratorException() {
         class NoStepsDefined : DefinitionException()
     }
 
-    sealed class OrchestrationException : OrktestratorException() {
+    sealed class OrchestrationException : OrktstratorException() {
         class RequiredValueMissing : OrchestrationException()
 
         class InvalidStateModificationResult : OrchestrationException()

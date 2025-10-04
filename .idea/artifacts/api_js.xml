@@ -2,7 +2,7 @@
   <artifact type="jar" name="api-js">
     <output-path>$PROJECT_DIR$/library/api/build/libs</output-path>
     <root id="archive" name="api-js.jar">
-      <element id="module-output" name="orktestrator.library.api.jsMain" />
+      <element id="module-output" name="orktstrator.library.api.jsMain" />
     </root>
   </artifact>
 </component>

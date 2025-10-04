@@ -30,5 +30,15 @@ kotlin {
     linuxArm64()
     // Windows
     mingwX64()
+
+    sourceSets {
+        jvmTest {
+            dependencies {
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.kotlin.test.junit)
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+    }
 }
 

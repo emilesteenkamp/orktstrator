@@ -1,12 +1,13 @@
-package me.emilesteenkamp.orktestrator.core
+package me.emilesteenkamp.orktstrator.core
 
-import me.emilesteenkamp.orktestrator.api.CollectorScope
-import me.emilesteenkamp.orktestrator.api.OrktestratorException
-import me.emilesteenkamp.orktestrator.api.State
-import me.emilesteenkamp.orktestrator.api.Step
+import me.emilesteenkamp.orktstrator.api.CollectorScope
+import me.emilesteenkamp.orktstrator.api.OrktstratorException
+import me.emilesteenkamp.orktstrator.api.State
+import me.emilesteenkamp.orktstrator.api.Step
 
-interface Graph<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : State.Transient,
-                                                        FINALISED_STATE : State.Final
+interface OrktstratorGraph<TRANSIENT_STATE, FINALISED_STATE>
+        where TRANSIENT_STATE : State.Transient,
+              FINALISED_STATE : State.Final
 {
     fun entryPoint(): Step<*, *>
 
@@ -16,7 +17,7 @@ interface Graph<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : State.
             where TRANSIENT_STATE : State.Transient,
                   FINALISED_STATE : State.Final
     {
-        @Throws(OrktestratorException.OrchestrationException.RequiredValueMissing::class)
+        @Throws(OrktstratorException.OrchestrationException.RequiredValueMissing::class)
         fun CollectorScope.collector(state: TRANSIENT_STATE): INPUT
         fun modifier(state: TRANSIENT_STATE, output: OUTPUT): State
         fun router(state: TRANSIENT_STATE): Step<*, *>?
@@ -29,7 +30,7 @@ interface Graph<TRANSIENT_STATE, FINALISED_STATE> where TRANSIENT_STATE : State.
     {
         fun <INPUT, OUTPUT> add(stepDefinition: StepDefinition<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>)
 
-        fun build(): Graph<TRANSIENT_STATE, FINALISED_STATE>
+        fun build(): OrktstratorGraph<TRANSIENT_STATE, FINALISED_STATE>
 
         data class StepDefinition<TRANSIENT_STATE, FINALISED_STATE, INPUT, OUTPUT>(
             val step: Step<INPUT, OUTPUT>,

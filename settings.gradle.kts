@@ -1,4 +1,4 @@
-rootProject.name = "orktestrator"
+rootProject.name = "orktstrator"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
