@@ -6,7 +6,7 @@ interface Orktestrator<TRANSIENT_STATE, FINALISED_STATE>
         where TRANSIENT_STATE : State.Transient,
               FINALISED_STATE : State.Final {
     @Throws(
-        OrktestratorError.RuntimeError::class,
+        OrktestratorException.OrchestrationException::class,
         CancellationException::class
     )
     suspend fun orchestrate(initialState: TRANSIENT_STATE): FINALISED_STATE
