@@ -12,7 +12,7 @@
             <option value="$PROJECT_DIR$/library" />
             <option value="$PROJECT_DIR$/library/api" />
             <option value="$PROJECT_DIR$/library/core" />
-            <option value="$PROJECT_DIR$/library/definition" />
+            <option value="$PROJECT_DIR$/library/implementation" />
           </set>
         </option>
       </GradleProjectSettings>

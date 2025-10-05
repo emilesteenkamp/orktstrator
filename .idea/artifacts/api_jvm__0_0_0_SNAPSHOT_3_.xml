@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="api-jvm-&quot;0.0.0-SNAPSHOT-3&quot;">
+    <output-path>$PROJECT_DIR$/library/api/build/libs</output-path>
+    <root id="archive" name="api-jvm-_0.0.0-SNAPSHOT-3_.jar">
+      <element id="module-output" name="orktstrator.library.api.jvmMain" />
+    </root>
+  </artifact>
+</component>

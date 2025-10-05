@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.maven.publish)
 }
 
 kotlin {
@@ -27,3 +28,15 @@ kotlin {
     mingwX64()
 }
 
+publishing {
+    publications {
+        withType<MavenPublication> {
+            groupId = project.rootProject.group.toString()
+            version = project.rootProject.version.toString()
+
+            if (name == "kotlinMultiplatform") {
+                artifactId = "orktstrator-api"
+            }
+        }
+    }
+}

@@ -2,10 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-}
-
-dependencies {
-    commonMainImplementation(projects.library.api)
+    alias(libs.plugins.maven.publish)
 }
 
 kotlin {
@@ -29,5 +26,34 @@ kotlin {
     linuxArm64()
     // Windows
     mingwX64()
+
+    sourceSets {
+        commonMain {
+            dependencies {
+                api(projects.library.api)
+                implementation(projects.library.implementation)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.kotlin.test.junit)
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+    }
+}
+
+publishing {
+    publications {
+        withType<MavenPublication> {
+            groupId = project.rootProject.group.toString()
+            version = project.rootProject.version.toString()
+
+            if (name == "kotlinMultiplatform") {
+                artifactId = "orktstrator-core"
+            }
+        }
+    }
 }
 
